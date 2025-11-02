@@ -44,14 +44,31 @@ export default function ScanPage() {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      })
+      // iOS-kompatible Kamera-Einstellungen
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: false
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        
+        // iOS benötigt play() nach srcObject
+        try {
+          await videoRef.current.play()
+        } catch (playError) {
+          console.error('Autoplay error:', playError)
+        }
+        
         setUseCamera(true)
       }
     } catch (err) {
+      console.error('Camera error:', err)
       setError('Kamera-Zugriff fehlgeschlagen. Bitte verwende den Datei-Upload.')
     }
   }
@@ -208,17 +225,18 @@ export default function ScanPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="space-y-6">
               {useCamera ? (
-                <div className="relative">
+                <div className="relative bg-black rounded-lg overflow-hidden">
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="w-full rounded-lg bg-black"
+                    className="w-full"
                     style={{ 
                       maxHeight: '60vh',
-                      objectFit: 'cover',
-                      transform: 'scaleX(1)' 
+                      minHeight: '40vh',
+                      objectFit: 'contain',
+                      display: 'block'
                     }}
                   />
                   <canvas ref={canvasRef} className="hidden" />
