@@ -369,9 +369,12 @@ export default function ScanPage() {
                 <textarea
                   value={translation}
                   onChange={(e) => setTranslation(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:ring-primary-500 focus:border-primary-500"
+                  rows={5}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:ring-primary-500 focus:border-primary-500 resize-y whitespace-pre-wrap"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  💡 Enthält automatisch: Übersetzung(en), Grundform und Grammatik-Hinweise
+                </p>
               </div>
 
               <div>

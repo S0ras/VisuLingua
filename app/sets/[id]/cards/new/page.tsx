@@ -104,17 +104,17 @@ export default function NewCardPage() {
               <label htmlFor="back" className="block text-sm font-medium text-gray-700 mb-2">
                 Rückseite (Deutsch) * {translating && <span className="text-primary-600">🔄 Übersetze...</span>}
               </label>
-              <input
-                type="text"
+              <textarea
                 id="back"
                 required
+                rows={5}
                 value={back}
                 onChange={(e) => setBack(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-gray-900 bg-white"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-gray-900 bg-white resize-y"
                 placeholder="Wird automatisch übersetzt..."
               />
               <p className="mt-1 text-xs text-gray-500">
-                💡 Tipp: Gib nur das spanische Wort ein - die Übersetzung erfolgt automatisch
+                💡 Tipp: Gib nur das spanische Wort ein - die Übersetzung erfolgt automatisch mit Grundform und Grammatik-Hinweisen
               </p>
             </div>
 
