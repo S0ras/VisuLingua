@@ -44,32 +44,52 @@ export default function ScanPage() {
 
   const startCamera = async () => {
     try {
+      setError('') // Clear previous errors
+      
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Kamera wird von diesem Browser nicht unterstützt')
+      }
+      
       // iOS-kompatible Kamera-Einstellungen
       const constraints = {
         video: {
           facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 }
         },
         audio: false
       }
       
+      console.log('Requesting camera access...')
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      console.log('Camera access granted:', stream.getVideoTracks().length, 'tracks')
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        
-        // iOS benötigt play() nach srcObject
-        try {
-          await videoRef.current.play()
-        } catch (playError) {
-          console.error('Autoplay error:', playError)
-        }
-        
         setUseCamera(true)
+        
+        // Wait for metadata to load
+        videoRef.current.onloadedmetadata = async () => {
+          console.log('Video metadata loaded:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight)
+          
+          // iOS benötigt expliziten play() Aufruf
+          try {
+            if (videoRef.current) {
+              await videoRef.current.play()
+              console.log('Video playing successfully')
+            }
+          } catch (playError) {
+            console.error('Autoplay error:', playError)
+            // Try to play on user interaction
+            setError('Tippe auf "Kamera öffnen" erneut, falls das Bild nicht erscheint.')
+          }
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Camera error:', err)
-      setError('Kamera-Zugriff fehlgeschlagen. Bitte verwende den Datei-Upload.')
+      const errorMessage = err.message || 'Unbekannter Fehler'
+      setError(`Kamera-Zugriff fehlgeschlagen: ${errorMessage}. Bitte verwende den Datei-Upload.`)
     }
   }
 
@@ -240,6 +260,28 @@ export default function ScanPage() {
                     }}
                   />
                   <canvas ref={canvasRef} className="hidden" />
+                  
+                  {/* iOS Fallback: Manual play button */}
+                  {videoRef.current && videoRef.current.paused && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                      <button
+                        onClick={async () => {
+                          try {
+                            if (videoRef.current) {
+                              await videoRef.current.play()
+                              setError('')
+                            }
+                          } catch (e) {
+                            setError('Bitte erlaube die Kamera-Nutzung in den Browser-Einstellungen')
+                          }
+                        }}
+                        className="bg-white text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold shadow-lg hover:bg-gray-100"
+                      >
+                        ▶️ Kamera starten
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="flex gap-4 mt-4">
                     <button
                       onClick={capturePhoto}

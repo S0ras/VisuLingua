@@ -22,41 +22,36 @@ export async function POST(req: NextRequest) {
 
     // Check if AWS credentials are configured
     if (!process.env.VISULINGUA_AWS_ACCESS_KEY_ID || !process.env.VISULINGUA_AWS_SECRET_ACCESS_KEY) {
-      console.error('AWS credentials not configured, using mock translation')
+      console.error('AWS credentials not configured, using free translation API')
       
-      // Mock translation for development (simple dictionary lookup)
-      const mockDictionary: { [key: string]: string } = {
-        'hola': 'hallo',
-        'casa': 'haus',
-        'gato': 'katze',
-        'perro': 'hund',
-        'libro': 'buch',
-        'mesa': 'tisch',
-        'silla': 'stuhl',
-        'agua': 'wasser',
-        'comida': 'essen',
-        'amor': 'liebe',
-        'amigo': 'freund',
-        'familia': 'familie',
-        'trabajo': 'arbeit',
-        'escuela': 'schule',
-        'tiempo': 'zeit',
-        'día': 'tag',
-        'noche': 'nacht',
-        'año': 'jahr',
-        'mundo': 'welt',
-        'vida': 'leben',
+      // Use MyMemory Translation API as fallback (free, no API key needed)
+      try {
+        const encodedText = encodeURIComponent(text)
+        const apiUrl = `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=${sourceLanguage}|${targetLanguage}`
+        
+        const response = await fetch(apiUrl)
+        const data = await response.json()
+        
+        if (data.responseStatus === 200 && data.responseData.translatedText) {
+          return NextResponse.json({
+            originalText: text,
+            translatedText: data.responseData.translatedText,
+            sourceLanguage,
+            targetLanguage,
+            fallback: 'MyMemory API',
+          })
+        }
+      } catch (fallbackError) {
+        console.error('Fallback translation failed:', fallbackError)
       }
       
-      const lowerText = text.toLowerCase().trim()
-      const mockTranslation = mockDictionary[lowerText] || `[${text}]`
-      
+      // If fallback also fails, return the original text with a note
       return NextResponse.json({
         originalText: text,
-        translatedText: mockTranslation,
+        translatedText: text,
         sourceLanguage,
         targetLanguage,
-        mock: true,
+        error: 'Translation unavailable - please configure AWS credentials',
       })
     }
 
