@@ -17,6 +17,7 @@ export default function ScanPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [useCamera, setUseCamera] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -68,6 +69,7 @@ export default function ScanPage() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         setUseCamera(true)
+        setVideoReady(false)
         
         // Wait for metadata to load
         videoRef.current.onloadedmetadata = async () => {
@@ -78,11 +80,13 @@ export default function ScanPage() {
             if (videoRef.current) {
               await videoRef.current.play()
               console.log('Video playing successfully')
+              setVideoReady(true)
+              setError('') // Clear any previous errors
             }
           } catch (playError) {
             console.error('Autoplay error:', playError)
-            // Try to play on user interaction
-            setError('Tippe auf "Kamera öffnen" erneut, falls das Bild nicht erscheint.')
+            // Video is ready but needs manual play
+            setVideoReady(true)
           }
         }
       }
@@ -99,6 +103,7 @@ export default function ScanPage() {
       stream.getTracks().forEach(track => track.stop())
       videoRef.current.srcObject = null
       setUseCamera(false)
+      setVideoReady(false)
     }
   }
 
@@ -261,24 +266,13 @@ export default function ScanPage() {
                   />
                   <canvas ref={canvasRef} className="hidden" />
                   
-                  {/* iOS Fallback: Manual play button */}
-                  {videoRef.current && videoRef.current.paused && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                      <button
-                        onClick={async () => {
-                          try {
-                            if (videoRef.current) {
-                              await videoRef.current.play()
-                              setError('')
-                            }
-                          } catch (e) {
-                            setError('Bitte erlaube die Kamera-Nutzung in den Browser-Einstellungen')
-                          }
-                        }}
-                        className="bg-white text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold shadow-lg hover:bg-gray-100"
-                      >
-                        ▶️ Kamera starten
-                      </button>
+                  {/* Loading state */}
+                  {!videoReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                      <div className="text-white text-center">
+                        <div className="animate-pulse text-4xl mb-2">📹</div>
+                        <p>Kamera lädt...</p>
+                      </div>
                     </div>
                   )}
                   
