@@ -111,14 +111,31 @@ export default function ScanPage() {
       }
 
       const { text } = await ocrResponse.json()
-      setOcrText(text)
+      
+      // Intelligente Wortextraktion: Wenn mehrere Wörter erkannt wurden,
+      // nehme das längste/wichtigste Wort (kein Artikel, keine Präposition)
+      const spanishStopWords = ['el', 'la', 'los', 'las', 'un', 'una', 'de', 'del', 'y', 'en', 'a', 'con', 'para', 'por']
+      const words = text.trim().split(/\s+/)
+      
+      let selectedWord = text
+      if (words.length > 1) {
+        // Filter Stopwörter und wähle das längste Wort
+        const meaningfulWords = words.filter((w: string) => 
+          !spanishStopWords.includes(w.toLowerCase()) && w.length > 2
+        )
+        if (meaningfulWords.length > 0) {
+          selectedWord = meaningfulWords.reduce((a: string, b: string) => a.length > b.length ? a : b)
+        }
+      }
+      
+      setOcrText(selectedWord)
 
       // Step 2: Translation
       const translateResponse = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          text, 
+          text: selectedWord, 
           sourceLanguage: 'es', 
           targetLanguage: 'de' 
         }),
@@ -196,13 +213,19 @@ export default function ScanPage() {
                     ref={videoRef}
                     autoPlay
                     playsInline
-                    className="w-full rounded-lg"
+                    muted
+                    className="w-full rounded-lg bg-black"
+                    style={{ 
+                      maxHeight: '60vh',
+                      objectFit: 'cover',
+                      transform: 'scaleX(1)' 
+                    }}
                   />
                   <canvas ref={canvasRef} className="hidden" />
                   <div className="flex gap-4 mt-4">
                     <button
                       onClick={capturePhoto}
-                      className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700"
+                      className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 text-lg font-semibold"
                     >
                       📸 Foto aufnehmen
                     </button>
@@ -281,7 +304,7 @@ export default function ScanPage() {
                   value={ocrText}
                   onChange={(e) => setOcrText(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 
@@ -293,7 +316,7 @@ export default function ScanPage() {
                   value={translation}
                   onChange={(e) => setTranslation(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 

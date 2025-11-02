@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { createFlashcard } from '@/lib/database'
@@ -11,8 +11,40 @@ export default function NewCardPage() {
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [loading, setLoading] = useState(false)
+  const [translating, setTranslating] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+
+  // Auto-translate when front text changes and back is empty
+  useEffect(() => {
+    const translateTimeout = setTimeout(async () => {
+      if (front.trim() && !back && front.length > 2) {
+        setTranslating(true)
+        try {
+          const response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              text: front, 
+              sourceLanguage: 'es', 
+              targetLanguage: 'de' 
+            }),
+          })
+          
+          if (response.ok) {
+            const { translatedText } = await response.json()
+            setBack(translatedText)
+          }
+        } catch (err) {
+          console.error('Translation failed:', err)
+        } finally {
+          setTranslating(false)
+        }
+      }
+    }, 800) // Warte 800ms nach letzter Eingabe
+
+    return () => clearTimeout(translateTimeout)
+  }, [front, back])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,14 +95,14 @@ export default function NewCardPage() {
                 required
                 value={front}
                 onChange={(e) => setFront(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-gray-900 bg-white"
                 placeholder="z.B. Hola"
               />
             </div>
 
             <div>
               <label htmlFor="back" className="block text-sm font-medium text-gray-700 mb-2">
-                Rückseite (Deutsch) *
+                Rückseite (Deutsch) * {translating && <span className="text-primary-600">🔄 Übersetze...</span>}
               </label>
               <input
                 type="text"
@@ -78,9 +110,12 @@ export default function NewCardPage() {
                 required
                 value={back}
                 onChange={(e) => setBack(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                placeholder="z.B. Hallo"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-gray-900 bg-white"
+                placeholder="Wird automatisch übersetzt..."
               />
+              <p className="mt-1 text-xs text-gray-500">
+                💡 Tipp: Gib nur das spanische Wort ein - die Übersetzung erfolgt automatisch
+              </p>
             </div>
 
             <div className="flex gap-4">
